@@ -1,4 +1,5 @@
-# SkillTracker
+# SkillTracker para Turtle-Wow
+(Optimizado para español, falta traducción al inglés)
 
 **SkillTracker** es un addon para World of Warcraft 1.12 (Classic) que te permite visualizar tus habilidades y profesiones, gestionar macros rápidos para crafteo y lanzar hechizos, y monitorear el espacio disponible en tus bolsas, todo en una interfaz amigable y movible.
 
@@ -7,13 +8,12 @@
 ## Características
 
 - **Visualiza tus profesiones y habilidades** con su progreso y acceso rápido.
-- **Crea y ejecuta macros personalizados** para cada profesión (por ejemplo, para craftear ítems específicos de un solo clic).
+- **Crea y ejecuta accesos rapidos a tus crafteos y hechizos** para cada profesión (por ejemplo, para craftear ítems específicos de un solo clic).
 - **Edita, describe y elimina macros fácilmente** (con atajos intuitivos).
-- **Asigna un icono visual a cada macro** desde una selección gráfica de iconos de WoW.
 - **Verifica espacios libres en tus bolsas** agrupados por tipo (bolsa normal, de almas, de hierbas, de minería, etc).
-- **Ventana totalmente movible y redimensionable**.
+- **Ventana totalmente movible y redimensionable** Se mueve haciendo clic izquierdo y arrastrando la ventana, para redimensionarla haciendo clic izquierdo y arrastrando la esquina inferior derecha.
 - **Mini-botón en el minimapa** para mostrar/ocultar la ventana.
-- **Modo solo profesiones o todas las habilidades**.
+- **Modo solo profesiones o todas las habilidades** haciendo clic derecho en el marco principal.
 
 ---
 
@@ -73,19 +73,14 @@
 
 ## Personalización
 
-- **Iconos para macros:**  
-  - Al crear/editar un macro puedes elegir un icono desde un selector visual.
-  - Puedes agregar más iconos modificando la lista interna (`availableIcons` en el código).
-
 - **Soporte para más profesiones y bolsas:**  
   - La detección de bolsas soporta tipos estándar (almas, hierbas, encantamiento, etc).
-  - Puedes extender los tipos en la tabla `familyNames` si tu servidor añade nuevos.
 
 ---
 
 ## Compatibilidad
 
-- **Diseñado para World of Warcraft 1.12.x (Classic/Vanilla)**
+- **Diseñado para Turtle-Wow (World of Warcraft 1.12.x (Classic/Vanilla)**)
 - **No requiere dependencias externas.**
 - **No compatible con versiones superiores.**
 
@@ -100,7 +95,7 @@
 
 ## Créditos y Licencia
 
-Addon desarrollado por [tu nombre/alias aquí].
+Addon desarrollado por zcagstudios.
 
 Licencia: MIT  
 Puedes modificar y compartir este addon libremente, mencionando al autor original.
