@@ -586,15 +586,15 @@ end
 local mini = CreateFrame("Button", "SkillTrackerMiniButton", Minimap)
 mini:SetWidth(32)
 mini:SetHeight(32)
-mini:SetPoint("TOPLEFT", Minimap, "TOPLEFT", -5, -5)
-mini:SetNormalTexture("Interface\\AddOns\\SkillTracker\\ItemRack-Icon.blp")
+mini:SetPoint("TOPLEFT", Minimap, "TOPLEFT", 0, 0) -- Puedes ajustar a "CENTER" o lo que gustes
+
+mini:SetNormalTexture("Interface\\AddOns\\SkillTracker\\icon.blp")  -- Aquí tu icono 32x32 con marco dorado
 mini:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
 
-local border = mini:CreateTexture(nil, "OVERLAY")
-border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-border:SetWidth(54)
-border:SetHeight(54)
-border:SetPoint("CENTER", mini, "CENTER", 0, 0)
+local tex = mini:GetNormalTexture()
+if tex then
+  tex:SetTexCoord(0, 1, 0, 1) -- Muestra el icono completo, sin recortar
+end
 
 mini:SetScript("OnUpdate", function()
   local tex = mini:GetNormalTexture()
