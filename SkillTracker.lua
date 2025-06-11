@@ -157,6 +157,7 @@ local professionList = {
 if not SkillTrackerDB then SkillTrackerDB = {} end
 if SkillTrackerDB.onlyProfessions == nil then SkillTrackerDB.onlyProfessions = true end
 if SkillTrackerDB.visible == nil then SkillTrackerDB.visible = true end
+if SkillTrackerDB.onlyBags == nil then SkillTrackerDB.onlyBags = false end
 if not SkillTrackerDB.macros then SkillTrackerDB.macros = {} end
 
 frame.rows = {}
@@ -314,165 +315,169 @@ function UpdateSkillRows()
   ----------------------------------------------------------------------
   --  1.  RECORRER LÍNEAS DE HABILIDAD / PROFESIÓN
   ----------------------------------------------------------------------
-  for i = 1, GetNumSkillLines() do
-    local name, isHeader, _, rank, _, _, maxRank = GetSkillLineInfo(i)
-    if not isHeader and maxRank > 0 then
-      if not SkillTrackerDB.onlyProfessions or professionList[name] then
+  if SkillTrackerDB.onlyBags then
+	index = 1 
+	  --  ⬇️  Salta todo el bloque de profesiones usando goto simple
+  else
+	  for i = 1, GetNumSkillLines() do
+		local name, isHeader, _, rank, _, _, maxRank = GetSkillLineInfo(i)
+		if not isHeader and maxRank > 0 then
+		  if not SkillTrackerDB.onlyProfessions or professionList[name] then
 
-        ----------------------------------------------------------------
-        -- 1a.  Texto de la profesión
-        ----------------------------------------------------------------
-        local row = frame.rows[index]
-        if not row then
-          row = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-          frame.rows[index] = row
-        end
-        local rowY = ROW_START_Y - ((index - 1) * ROW_SPACING)
-        row:SetPoint("TOPLEFT", frame, "TOPLEFT", 36, rowY)
-        row:SetJustifyH("LEFT")
+			----------------------------------------------------------------
+			-- 1a.  Texto de la profesión
+			----------------------------------------------------------------
+			local row = frame.rows[index]
+			if not row then
+			  row = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+			  frame.rows[index] = row
+			end
+			local rowY = ROW_START_Y - ((index - 1) * ROW_SPACING)
+			row:SetPoint("TOPLEFT", frame, "TOPLEFT", 36, rowY)
+			row:SetJustifyH("LEFT")
 
-        ----------------------------------------------------------------
-        -- 1b.  Botón/Icono de la profesión
-        ----------------------------------------------------------------
-        if not frame.rows[index .. "_icon"] then
-          local iconBtn = CreateFrame("Button", nil, frame)
-          iconBtn:SetWidth(16)
-          iconBtn:SetHeight(16)
-          frame.rows[index .. "_icon"] = iconBtn
-        end
-        local iconBtn = frame.rows[index .. "_icon"]
-        iconBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, rowY)
+			----------------------------------------------------------------
+			-- 1b.  Botón/Icono de la profesión
+			----------------------------------------------------------------
+			if not frame.rows[index .. "_icon"] then
+			  local iconBtn = CreateFrame("Button", nil, frame)
+			  iconBtn:SetWidth(16)
+			  iconBtn:SetHeight(16)
+			  frame.rows[index .. "_icon"] = iconBtn
+			end
+			local iconBtn = frame.rows[index .. "_icon"]
+			iconBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, rowY)
 
-        ----------------------------------------------------------------
-        -- 1c.  Botón '+' (agregar macro) y botones de macro numerados
-        ----------------------------------------------------------------
-        if not frame.rows[index .. "_addmacro"] then
-          local addBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-          addBtn:SetWidth(20); addBtn:SetHeight(20); addBtn:SetText("+")
-          frame.rows[index .. "_addmacro"] = addBtn
-        end
-        local addBtn   = frame.rows[index .. "_addmacro"]
-        local addBtnX  = 180
-        addBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", addBtnX, rowY)
+			----------------------------------------------------------------
+			-- 1c.  Botón '+' (agregar macro) y botones de macro numerados
+			----------------------------------------------------------------
+			if not frame.rows[index .. "_addmacro"] then
+			  local addBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+			  addBtn:SetWidth(20); addBtn:SetHeight(20); addBtn:SetText("+")
+			  frame.rows[index .. "_addmacro"] = addBtn
+			end
+			local addBtn   = frame.rows[index .. "_addmacro"]
+			local addBtnX  = 180
+			addBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", addBtnX, rowY)
 
-        -- Acción del botón '+'
-        addBtn:SetScript("OnClick", function()
-          if not SkillTrackerDB.macros[name] then SkillTrackerDB.macros[name] = {} end
-          tinsert(SkillTrackerDB.macros[name], {})
-          local macroIndex = getn(SkillTrackerDB.macros[name])
-          SkillTracker_EditMacro(name, macroIndex, true)
-        end)
-        addBtn:Show()
+			-- Acción del botón '+'
+			addBtn:SetScript("OnClick", function()
+			  if not SkillTrackerDB.macros[name] then SkillTrackerDB.macros[name] = {} end
+			  tinsert(SkillTrackerDB.macros[name], {})
+			  local macroIndex = getn(SkillTrackerDB.macros[name])
+			  SkillTracker_EditMacro(name, macroIndex, true)
+			end)
+			addBtn:Show()
 
-        -- Macro-botones
-        if not frame.rows[index .. "_macros"] then
-          frame.rows[index .. "_macros"] = {}
-        end
-        local macroBtns = frame.rows[index .. "_macros"]
-        local macros    = SkillTrackerDB.macros[name] or {}
+			-- Macro-botones
+			if not frame.rows[index .. "_macros"] then
+			  frame.rows[index .. "_macros"] = {}
+			end
+			local macroBtns = frame.rows[index .. "_macros"]
+			local macros    = SkillTrackerDB.macros[name] or {}
 
-        -- Oculta cualquier botón antiguo sobrante
-        for m = 1, getn(macroBtns) do
-          if macroBtns[m] then macroBtns[m]:Hide() end
-        end
+			-- Oculta cualquier botón antiguo sobrante
+			for m = 1, getn(macroBtns) do
+			  if macroBtns[m] then macroBtns[m]:Hide() end
+			end
 
-        -- Crea / posiciona botones existentes
-        for m = 1, getn(macros) do
-          if not macroBtns[m] then
-            local btn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-            btn:SetWidth(24); btn:SetHeight(20)
-            btn:SetText(m)
-            macroBtns[m] = btn
-          end
-          local btn = macroBtns[m]
-          btn:SetPoint("TOPLEFT", frame, "TOPLEFT",
-                       addBtnX + 24 + (m - 1) * 26, rowY)
-          btn:Show()
-
-          btn:SetScript("OnClick", function()
-            local macroData = macros[m]
-            SkillTracker_DoCraft(name, macroData)
-          end)
-          btn:SetScript("OnMouseUp", function()
-            if IsShiftKeyDown() and (arg1 == "RightButton" or arg1 == "LeftButton") then
-              StaticPopupDialogs["SKILLTRACKER_DELETE_MACRO"] = {
-                text = "¿Eliminar este macro?",
-                button1 = "Sí",
-                button2 = "No",
-                OnAccept = function()
-                  tremove(SkillTrackerDB.macros[name], m)
-                  UpdateSkillRows()
-                end,
-                timeout = 0, whileDead = true, hideOnEscape = true,
-              }
-              StaticPopup_Show("SKILLTRACKER_DELETE_MACRO")
-            elseif arg1 == "RightButton" then
-              SkillTracker_EditMacro(name, m, false)
-            end
-          end)
-          btn:SetScript("OnEnter", function()
-            local macroData = macros[m]
-            if macroData and macroData.desc and macroData.desc ~= "" then
-              GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
-              GameTooltip:SetText(macroData.desc, 1, 1, 1, 1, true)
-              GameTooltip:Show()
-            end
-          end)
-          btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        end
-
-        ----------------------------------------------------------------
-        -- 1d.  Texto y comportamiento del icono
-        ----------------------------------------------------------------
-        local iconData = professionData[name]
-        local rowText  = "|cffffff00" .. name .. "|r: |cffffffff" ..
-                         rank .. "/" .. maxRank .. "|r"
-        row:SetText(rowText); row:Show()
-
-        if iconData then
-          iconBtn:SetNormalTexture(iconData.icon)
-          iconBtn:SetHighlightTexture(nil)
-
-          if iconData.spell == "Pesca" or iconData.spell == "Fishing" then
-            iconBtn:SetScript("OnClick", function()
-              if IsFishingPoleEquipped() then
-                CastSpellByName("Pesca(Experimentado)")
-                CastSpellByName("Fishing(Expert)")
-                CastSpellByName("Pesca")
-                CastSpellByName("Fishing")
-                CastSpellByName("Pescar")
-              end
-            end)
-            if IsFishingPoleEquipped() then
-              iconBtn:GetNormalTexture():SetDesaturated(false)
-              iconBtn:SetAlpha(1.0); iconBtn:Enable()
-            else
-              iconBtn:GetNormalTexture():SetDesaturated(true)
-              iconBtn:SetAlpha(0.4);  iconBtn:Disable()
-            end
-          else
-            iconBtn:SetScript("OnClick", function()
-              -- ► Si es Minería, abre Fundición (Smelting)
-			  if iconData.spell == "Minería" or iconData.spell == "Mining" then
-			    CastSpellByName("Fundición")        -- castellano
-				CastSpellByName("Smelting")      -- inglés (por si acaso)
-			  else
-			    CastSpellByName(iconData.spell)
+			-- Crea / posiciona botones existentes
+			for m = 1, getn(macros) do
+			  if not macroBtns[m] then
+				local btn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+				btn:SetWidth(24); btn:SetHeight(20)
+				btn:SetText(m)
+				macroBtns[m] = btn
 			  end
-            end)
-            iconBtn:GetNormalTexture():SetDesaturated(false)
-            iconBtn:SetAlpha(1.0); iconBtn:Enable()
-          end
-          iconBtn:Show()
-        else
-          iconBtn:Hide()
-        end
+			  local btn = macroBtns[m]
+			  btn:SetPoint("TOPLEFT", frame, "TOPLEFT",
+						   addBtnX + 24 + (m - 1) * 26, rowY)
+			  btn:Show()
 
-        index = index + 1
-      end
-    end
-  end -- for GetNumSkillLines
+			  btn:SetScript("OnClick", function()
+				local macroData = macros[m]
+				SkillTracker_DoCraft(name, macroData)
+			  end)
+			  btn:SetScript("OnMouseUp", function()
+				if IsShiftKeyDown() and (arg1 == "RightButton" or arg1 == "LeftButton") then
+				  StaticPopupDialogs["SKILLTRACKER_DELETE_MACRO"] = {
+					text = "¿Eliminar este macro?",
+					button1 = "Sí",
+					button2 = "No",
+					OnAccept = function()
+					  tremove(SkillTrackerDB.macros[name], m)
+					  UpdateSkillRows()
+					end,
+					timeout = 0, whileDead = true, hideOnEscape = true,
+				  }
+				  StaticPopup_Show("SKILLTRACKER_DELETE_MACRO")
+				elseif arg1 == "RightButton" then
+				  SkillTracker_EditMacro(name, m, false)
+				end
+			  end)
+			  btn:SetScript("OnEnter", function()
+				local macroData = macros[m]
+				if macroData and macroData.desc and macroData.desc ~= "" then
+				  GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+				  GameTooltip:SetText(macroData.desc, 1, 1, 1, 1, true)
+				  GameTooltip:Show()
+				end
+			  end)
+			  btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+			end
 
+			----------------------------------------------------------------
+			-- 1d.  Texto y comportamiento del icono
+			----------------------------------------------------------------
+			local iconData = professionData[name]
+			local rowText  = "|cffffff00" .. name .. "|r: |cffffffff" ..
+							 rank .. "/" .. maxRank .. "|r"
+			row:SetText(rowText); row:Show()
+
+			if iconData then
+			  iconBtn:SetNormalTexture(iconData.icon)
+			  iconBtn:SetHighlightTexture(nil)
+
+			  if iconData.spell == "Pesca" or iconData.spell == "Fishing" then
+				iconBtn:SetScript("OnClick", function()
+				  if IsFishingPoleEquipped() then
+					CastSpellByName("Pesca(Experimentado)")
+					CastSpellByName("Fishing(Expert)")
+					CastSpellByName("Pesca")
+					CastSpellByName("Fishing")
+					CastSpellByName("Pescar")
+				  end
+				end)
+				if IsFishingPoleEquipped() then
+				  iconBtn:GetNormalTexture():SetDesaturated(false)
+				  iconBtn:SetAlpha(1.0); iconBtn:Enable()
+				else
+				  iconBtn:GetNormalTexture():SetDesaturated(true)
+				  iconBtn:SetAlpha(0.4);  iconBtn:Disable()
+				end
+			  else
+				iconBtn:SetScript("OnClick", function()
+				  -- ► Si es Minería, abre Fundición (Smelting)
+				  if iconData.spell == "Minería" or iconData.spell == "Mining" then
+					CastSpellByName("Fundición")        -- castellano
+					CastSpellByName("Smelting")      -- inglés (por si acaso)
+				  else
+					CastSpellByName(iconData.spell)
+				  end
+				end)
+				iconBtn:GetNormalTexture():SetDesaturated(false)
+				iconBtn:SetAlpha(1.0); iconBtn:Enable()
+			  end
+			  iconBtn:Show()
+			else
+			  iconBtn:Hide()
+			end
+
+			index = index + 1
+		  end
+		end
+	  end -- for GetNumSkillLines
+  end
   ----------------------------------------------------------------------
   -- 2.  OCULTAR FILAS QUE SOBRAN
   ----------------------------------------------------------------------
@@ -563,7 +568,9 @@ function UpdateSkillRows()
   ----------------------------------------------------------------------
   -- C) Dibujar los labels (yOffset parte del nuevo padding)
   ----------------------------------------------------------------------
-  local yOffset = ROW_START_Y - ((index - 1) * ROW_SPACING) - BAG_PADDING
+  local topPadding = SkillTrackerDB.onlyBags and -10 or ROW_START_Y
+  local yOffset = (topPadding - ((index - 1) * ROW_SPACING) - BAG_PADDING) 
+
   local lblIdx  = 1
 
   -- Leyenda principal
@@ -586,7 +593,8 @@ function UpdateSkillRows()
                 frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     frame.bagSlotLabels[lblIdx] = lbl
     lbl:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
-    lbl:SetFont("Fonts\\FRIZQT__.TTF", 12)
+    local fontSize = SkillTrackerDB.onlyBags and 14 or 12
+	lbl:SetFont("Fonts\\FRIZQT__.TTF", fontSize, SkillTrackerDB.onlyBags and "OUTLINE" or nil)
     lbl:SetText(string.format("%s%s: |cffffff00%d|r/%d|r",
                               familyNames[0].color, familyNames[0].name,
                               slotLibres[0], slotTotals[0]))
@@ -602,7 +610,8 @@ function UpdateSkillRows()
                   frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
       frame.bagSlotLabels[lblIdx] = lbl
       lbl:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
-      lbl:SetFont("Fonts\\FRIZQT__.TTF", 12)
+      local fontSize = SkillTrackerDB.onlyBags and 14 or 12
+	  lbl:SetFont("Fonts\\FRIZQT__.TTF", fontSize, SkillTrackerDB.onlyBags and "OUTLINE" or nil)
       lbl:SetText(string.format("%s%s: |cffffff00%d|r/%d|r",
                                 info.color, info.name,
                                 slotLibres[fam], slotTotals[fam]))
@@ -617,7 +626,8 @@ function UpdateSkillRows()
     local lbl = frame.bagSlotLabels[lblIdx] or frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     frame.bagSlotLabels[lblIdx] = lbl
     lbl:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
-    lbl:SetFont("Fonts\\FRIZQT__.TTF", 12)
+    local fontSize = SkillTrackerDB.onlyBags and 14 or 12
+	lbl:SetFont("Fonts\\FRIZQT__.TTF", fontSize, SkillTrackerDB.onlyBags and "OUTLINE" or nil)
     lbl:SetText(string.format("|cffb13cffFragmentos de alma:|r |cffffff00%d|r", soulShardCount))
     lbl:Show()
     yOffset = yOffset - 16
@@ -645,15 +655,21 @@ function UpdateSkillRows()
   divider:SetText("|cff555555----------------------------------------|r")
   divider:Show()
 
-   ----------------------------------------------------------------------
+    ----------------------------------------------------------------------
   -- 4.  AJUSTAR ALTO DEL FRAME (crece o disminuye según el contenido)
   ----------------------------------------------------------------------
-  local neededHeight = -yOffset + 40   -- 40 px de margen inferior
-  local MIN_HEIGHT   = 240             -- alto mínimo por estética
+  local neededHeight = -yOffset + 40          -- margen inferior
+  local MIN_FULL     = 200                    -- vista completa
+  local MIN_BAGS     = 100                    -- solo bolsas (ajusta a gusto)
 
-  -- Fija la altura al mayor entre lo necesario y el mínimo.
-  -- Esto permite que el marco se agrande y también se encoja.
-  frame:SetHeight(math.max(neededHeight, MIN_HEIGHT))
+  if SkillTrackerDB.onlyBags then
+    -- En modo bolsas dejamos que sea tan pequeño como necesite,
+    -- pero nunca menos de MIN_BAGS para que se vea bien.
+    frame:SetHeight(math.max(neededHeight, MIN_BAGS))
+  else
+    -- En modo normal usamos el mínimo clásico.
+    frame:SetHeight(math.max(neededHeight, MIN_FULL))
+  end
 end
 
 -- Botón minimapa
@@ -700,9 +716,9 @@ mini:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
 frame:SetScript("OnMouseUp", function()
   if arg1 == "RightButton" then
-    SkillTrackerDB.onlyProfessions = not SkillTrackerDB.onlyProfessions
-    DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00[SkillTracker]|r Modo: " ..
-      (SkillTrackerDB.onlyProfessions and "Solo profesiones" or "Todas las habilidades"))
+    SkillTrackerDB.onlyBags = not SkillTrackerDB.onlyBags
+    local msg = SkillTrackerDB.onlyBags and "Modo bolsas" or "Modo completo"
+	DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00[SkillTracker]|r "..msg)
     UpdateSkillRows()
   end
 end)
