@@ -148,6 +148,7 @@ local professionList = {
   ["First Aid"]   = true, ["Primeros Auxilios"] = true,
   ["Fishing"]     = true, ["Pesca"] = true,
   ["Survival"]    = true, ["Supervivencia"] = true,
+  ["Jewelcrafting"] = true, ["Joyería"] = true,
 }
 
 ------------------------------------------------------------------------
@@ -188,6 +189,8 @@ local professionData = {
   ["Leatherworking"] = { spell = "Leatherworking", icon = "Interface\\Icons\\INV_Misc_ArmorKit_17" },
   ["Supervivencia"]  = { spell = "Supervivencia", icon = "Interface\\Icons\\Trade_Survival" },
   ["Survival"]       = { spell = "Survival", icon = "Interface\\Icons\\Trade_Survival" },
+  ["Joyería"]       = { spell = "Joyería",       icon = "Interface\\Icons\\INV_Misc_Gem_01" },
+  ["Jewelcrafting"] = { spell = "Jewelcrafting", icon = "Interface\\Icons\\INV_Misc_Gem_01" },
 }
 
 -- Tabla para mapear profesión a ventana y hechizo
@@ -216,6 +219,8 @@ local professionInfo = {
   ["Fishing"] = { frame = "CastingBarFrame", spell = "Fishing" },
   ["Supervivencia"] = { frame = "TradeSkillFrame", spell = "Supervivencia" },
   ["Survival"] = { frame = "TradeSkillFrame", spell = "Survival" },
+   ["Joyería"]       = { frame = "TradeSkillFrame", spell = "Joyería"       },
+  ["Jewelcrafting"] = { frame = "TradeSkillFrame", spell = "Jewelcrafting" },
 }
 
 -- Para manejo de crafts pendientes al abrir ventana
@@ -447,7 +452,13 @@ function UpdateSkillRows()
             end
           else
             iconBtn:SetScript("OnClick", function()
-              CastSpellByName(iconData.spell)
+              -- ► Si es Minería, abre Fundición (Smelting)
+			  if iconData.spell == "Minería" or iconData.spell == "Mining" then
+			    CastSpellByName("Fundición")        -- castellano
+				CastSpellByName("Smelting")      -- inglés (por si acaso)
+			  else
+			    CastSpellByName(iconData.spell)
+			  end
             end)
             iconBtn:GetNormalTexture():SetDesaturated(false)
             iconBtn:SetAlpha(1.0); iconBtn:Enable()
