@@ -1,4 +1,46 @@
--- Marco principal
+------------------------------------------------------------------------
+--  COMPATIBILIDAD LUA 5.0.2  (Vanilla no trae string.match)
+------------------------------------------------------------------------
+if not string.match then
+  -- Devuelve solo la primera captura, igual que string.match moderno.
+  function string.match(str, pattern)
+    local _, _, capture = string.find(str, pattern)
+    return capture
+  end
+end
+
+------------------------------------------------------------------------
+--  POSICIÓN DEL MARCO  (NUEVAS FUNCIONES ROBUSTAS)
+------------------------------------------------------------------------
+function SavePosition()
+  if not SkillTrackerFrame then return end
+
+  local point, _, relPoint, xOfs, yOfs = SkillTrackerFrame:GetPoint()
+  if not point then
+    point, relPoint = "TOPLEFT", "BOTTOMLEFT"
+    xOfs, yOfs      = SkillTrackerFrame:GetLeft(), SkillTrackerFrame:GetTop()
+  end
+
+  SkillTrackerDB.pos = {
+    point         = point,
+    relativePoint = relPoint or point,
+    x             = xOfs or 0,
+    y             = yOfs or 0,
+  }
+end
+
+function LoadPosition()
+  local p = SkillTrackerDB.pos
+  if p and p.point and p.relativePoint then
+    SkillTrackerFrame:ClearAllPoints()
+    SkillTrackerFrame:SetPoint(p.point, UIParent, p.relativePoint, p.x, p.y)
+  else
+    SkillTrackerFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+  end
+end
+------------------------------------------------------------------------
+--  MARCO PRINCIPAL
+------------------------------------------------------------------------
 local frame = CreateFrame("Frame", "SkillTrackerFrame", UIParent)
 frame:SetWidth(260)
 frame:SetHeight(240)
@@ -15,7 +57,7 @@ frame:SetBackdrop({
   bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
   edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
   tile = true, tileSize = 16, edgeSize = 10,
-  insets = { left = 3, right = 3, top = 3, bottom = 3 }
+  insets  = { left = 3, right = 3, top = 3, bottom = 3 }
 })
 frame:SetBackdropColor(0, 0, 0, 0.95)
 
@@ -63,12 +105,10 @@ helpDialog:SetScript("OnDragStart", function() helpDialog:StartMoving() end)
 helpDialog:SetScript("OnDragStop", function() helpDialog:StopMovingOrSizing() end)
 helpDialog:Hide()
 
--- Título del diálogo
 local helpTitle = helpDialog:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 helpTitle:SetPoint("TOP", helpDialog, "TOP", 0, -15)
 helpTitle:SetText("SkillTracker - Ayuda")
 
--- Texto de ayuda
 local helpText = helpDialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 helpText:SetPoint("TOPLEFT", helpDialog, "TOPLEFT", 20, -40)
 helpText:SetJustifyH("LEFT")
@@ -83,7 +123,6 @@ helpText:SetText(
   "|cffccccccNota: Eliminar solo es posible usando la tecla SHIFT más click (izquierdo o derecho) sobre el macro.|r"
 )
 
--- Botón de cerrar la ayuda
 local closeHelpBtn = CreateFrame("Button", nil, helpDialog, "UIPanelButtonTemplate")
 closeHelpBtn:SetWidth(60)
 closeHelpBtn:SetHeight(20)
@@ -91,77 +130,64 @@ closeHelpBtn:SetText("Cerrar")
 closeHelpBtn:SetPoint("BOTTOM", helpDialog, "BOTTOM", 0, 10)
 closeHelpBtn:SetScript("OnClick", function() helpDialog:Hide() end)
 
-helpBtn:SetScript("OnClick", function()
-  helpDialog:Show()
-end)
+helpBtn:SetScript("OnClick", function() helpDialog:Show() end)
 
--- Lista de profesiones válidas
+------------------------------------------------------------------------
+--  LISTA DE PROFESIONES VÁLIDAS
+------------------------------------------------------------------------
 local professionList = {
   ["Alchemy"] = true, ["Alquimia"] = true,
   ["Blacksmithing"] = true, ["Herrería"] = true,
-  ["Enchanting"] = true, ["Encantamiento"] = true,
+  ["Enchanting"]  = true, ["Encantamiento"] = true,
   ["Engineering"] = true, ["Ingeniería"] = true,
-  ["Herbalism"] = true, ["Herboristería"] = true,
-  ["Mining"] = true, ["Minería"] = true,
+  ["Herbalism"]   = true, ["Herboristería"] = true,
+  ["Mining"]      = true, ["Minería"] = true,
   ["Leatherworking"] = true, ["Peletería"] = true,
-  ["Tailoring"] = true, ["Sastrería"] = true,
-  ["Cooking"] = true, ["Cocina"] = true,
-  ["First Aid"] = true, ["Primeros Auxilios"] = true,
-  ["Fishing"] = true, ["Pesca"] = true,
-  ["Survival"] = true, ["Supervivencia"] = true
+  ["Tailoring"]   = true, ["Sastrería"] = true,
+  ["Cooking"]     = true, ["Cocina"] = true,
+  ["First Aid"]   = true, ["Primeros Auxilios"] = true,
+  ["Fishing"]     = true, ["Pesca"] = true,
+  ["Survival"]    = true, ["Supervivencia"] = true,
 }
 
--- Variables persistentes
+------------------------------------------------------------------------
+--  VARIABLES PERSISTENTES
+------------------------------------------------------------------------
 if not SkillTrackerDB then SkillTrackerDB = {} end
 if SkillTrackerDB.onlyProfessions == nil then SkillTrackerDB.onlyProfessions = true end
 if SkillTrackerDB.visible == nil then SkillTrackerDB.visible = true end
 if not SkillTrackerDB.macros then SkillTrackerDB.macros = {} end
 
--- Guardar y cargar posición
-local function SavePosition()
-  if not frame or not frame.GetPoint then return end
-  local point, _, relativePoint, x, y = frame:GetPoint()
-  if not point then return end
-  SkillTrackerDB.pos = { point, relativePoint, x, y }
-end
-
-local function LoadPosition()
-  if SkillTrackerDB.pos then
-    frame:ClearAllPoints()
-    frame:SetPoint(SkillTrackerDB.pos[1], UIParent, SkillTrackerDB.pos[2], SkillTrackerDB.pos[3], SkillTrackerDB.pos[4])
-  else
-    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-  end
-end
-
 frame.rows = {}
 
--- Tabla de datos con iconos y nombres de hechizo
+------------------------------------------------------------------------
+--  DATOS DE PROFESIONES (icons / spells)  (sin cambios)
+------------------------------------------------------------------------
 local professionData = {
   ["Sastrería"] = { spell = "Sastrería", icon = "Interface\\Icons\\Trade_Tailoring" },
   ["Tailoring"] = { spell = "Tailoring", icon = "Interface\\Icons\\Trade_Tailoring" },
-  ["Herrería"] = { spell = "Herrería", icon = "Interface\\Icons\\Trade_Blacksmithing" },
+  ["Herrería"]  = { spell = "Herrería", icon = "Interface\\Icons\\Trade_Blacksmithing" },
   ["Blacksmithing"] = { spell = "Blacksmithing", icon = "Interface\\Icons\\Trade_Blacksmithing" },
-  ["Alquimia"] = { spell = "Alquimia", icon = "Interface\\Icons\\Trade_Alchemy" },
-  ["Alchemy"] = { spell = "Alchemy", icon = "Interface\\Icons\\Trade_Alchemy" },
+  ["Alquimia"]  = { spell = "Alquimia", icon = "Interface\\Icons\\Trade_Alchemy" },
+  ["Alchemy"]   = { spell = "Alchemy",  icon = "Interface\\Icons\\Trade_Alchemy" },
   ["Ingeniería"] = { spell = "Ingeniería", icon = "Interface\\Icons\\Trade_Engineering" },
-  ["Engineering"] = { spell = "Engineering", icon = "Interface\\Icons\\Trade_Engineering" },
-  ["Pesca"] = { spell = "Pesca", icon = "Interface\\Icons\\Trade_Fishing" },
-  ["Fishing"] = { spell = "Fishing", icon = "Interface\\Icons\\Trade_Fishing" },
-  ["Cocina"] = { spell = "Cocinar", icon = "Interface\\Icons\\INV_Misc_Food_15" },
-  ["Cooking"] = { spell = "Cooking", icon = "Interface\\Icons\\INV_Misc_Food_15" },
+  ["Engineering"]= { spell = "Engineering", icon = "Interface\\Icons\\Trade_Engineering" },
+  ["Pesca"]     = { spell = "Pesca",  icon = "Interface\\Icons\\Trade_Fishing" },
+  ["Fishing"]   = { spell = "Fishing",icon = "Interface\\Icons\\Trade_Fishing" },
+  ["Cocina"]    = { spell = "Cocinar", icon = "Interface\\Icons\\INV_Misc_Food_15" },
+  ["Cooking"]   = { spell = "Cooking", icon = "Interface\\Icons\\INV_Misc_Food_15" },
   ["Primeros Auxilios"] = { spell = "Primeros Auxilios", icon = "Interface\\Icons\\Spell_Holy_SealOfSacrifice" },
   ["First Aid"] = { spell = "First Aid", icon = "Interface\\Icons\\Spell_Holy_SealOfSacrifice" },
   ["Herboristería"] = { spell = "Herboristería", icon = "Interface\\Icons\\Spell_Nature_NatureTouchGrow" },
   ["Herbalism"] = { spell = "Herbalism", icon = "Interface\\Icons\\Spell_Nature_NatureTouchGrow" },
-  ["Minería"] = { spell = "Minería", icon = "Interface\\Icons\\Trade_Mining" },
-  ["Mining"] = { spell = "Mining", icon = "Interface\\Icons\\Trade_Mining" },
-  ["Encantamiento"] = { spell = "Encantamiento", icon = "Interface\\Icons\\Trade_Engraving" },
-  ["Enchanting"] = { spell = "Enchanting", icon = "Interface\\Icons\\Trade_Engraving" },
+  ["Minería"]   = { spell = "Minería", icon = "Interface\\Icons\\Trade_Mining" },
+  ["Mining"]    = { spell = "Mining",  icon = "Interface\\Icons\\Trade_Mining" },
+  ["Encantamiento"]  = { spell = "Encantamiento", icon = "Interface\\Icons\\Trade_Engraving" },
+  ["Enchanting"]     = { spell = "Enchanting", icon = "Interface\\Icons\\Trade_Engraving" },
   ["Peletería"] = { spell = "Peletería", icon = "Interface\\Icons\\INV_Misc_ArmorKit_17" },
   ["Leatherworking"] = { spell = "Leatherworking", icon = "Interface\\Icons\\INV_Misc_ArmorKit_17" },
-  ["Supervivencia"] = { spell = "Supervivencia", icon = "Interface\\Icons\\Trade_Survival" },
-  ["Survival"] = { spell = "Survival", icon = "Interface\\Icons\\Trade_Survival" },
+  ["Supervivencia"]  = { spell = "Supervivencia", icon = "Interface\\Icons\\Trade_Survival" },
+  ["Survival"]       = { spell = "Survival", icon = "Interface\\Icons\\Trade_Survival" },
 }
 
 -- Tabla para mapear profesión a ventana y hechizo
@@ -256,93 +282,108 @@ frame:SetScript("OnEvent", function()
   if orig_OnEvent then orig_OnEvent() end
 end)
 
--- Verifica si el jugador tiene una caña de pescar equipada (para mostrar el ícono de Pesca activo/inactivo)
+------------------------------------------------------------------------
+--  COMPROBAR CAÑA EQUIPADA  (simplificado con string.match alias)
+------------------------------------------------------------------------
 local function IsFishingPoleEquipped()
-  local itemLink = GetInventoryItemLink("player", 16)
-  if not itemLink then return false end
-  local itemName = string.match(itemLink, "%[(.+)%]")
-  if not itemName then return false end
-  return string.find(itemName, "Caña") or string.find(itemName, "Pole")
+  local link = GetInventoryItemLink("player", 16)   -- mano principal
+  if not link then return false end
+  local name = string.match(link, "%[(.+)%]")
+  return name and (string.find(name, "Caña") or string.find(name, "Pole"))
 end
 
--- Función principal para mostrar filas
+------------------------------------------------------------------------
+--  FUNCIÓN COMPLETA: UpdateSkillRows()
+--  Sustitúyela íntegramente en tu archivo SkillTracker.lua
+------------------------------------------------------------------------
 function UpdateSkillRows()
-  local index = 1
+  ----------------------------------------------------------------------
+  --  CONSTANTES DE DISEÑO
+  ----------------------------------------------------------------------
+  local ROW_SPACING = 20      -- Alto de cada fila (texto + icono + botones)
+  local ROW_START_Y = -30     -- Offset inicial desde el top del frame
+  local BAG_PADDING = 24      -- Espacio extra antes de la cabecera de bolsas
+
+  local index = 1             -- Índice de fila profesional que vamos pintando
+
+  ----------------------------------------------------------------------
+  --  1.  RECORRER LÍNEAS DE HABILIDAD / PROFESIÓN
+  ----------------------------------------------------------------------
   for i = 1, GetNumSkillLines() do
     local name, isHeader, _, rank, _, _, maxRank = GetSkillLineInfo(i)
     if not isHeader and maxRank > 0 then
       if not SkillTrackerDB.onlyProfessions or professionList[name] then
 
-        -- Crear texto de habilidad
+        ----------------------------------------------------------------
+        -- 1a.  Texto de la profesión
+        ----------------------------------------------------------------
         local row = frame.rows[index]
         if not row then
           row = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-          row:SetPoint("TOPLEFT", frame, "TOPLEFT", 36, -30 - ((index - 1) * 18))
-          row:SetJustifyH("LEFT")
           frame.rows[index] = row
         end
+        local rowY = ROW_START_Y - ((index - 1) * ROW_SPACING)
+        row:SetPoint("TOPLEFT", frame, "TOPLEFT", 36, rowY)
+        row:SetJustifyH("LEFT")
 
-        -- Crear botón de ícono si no existe
+        ----------------------------------------------------------------
+        -- 1b.  Botón/Icono de la profesión
+        ----------------------------------------------------------------
         if not frame.rows[index .. "_icon"] then
           local iconBtn = CreateFrame("Button", nil, frame)
           iconBtn:SetWidth(16)
           iconBtn:SetHeight(16)
-          iconBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -30 - ((index - 1) * 18))
-          local tex = iconBtn:CreateTexture(nil, "ARTWORK")
-          tex:SetAllPoints()
-          iconBtn.texture = tex
           frame.rows[index .. "_icon"] = iconBtn
         end
-
-        local iconData = professionData[name]
         local iconBtn = frame.rows[index .. "_icon"]
+        iconBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, rowY)
 
-        -- Crear o actualizar botones de macro dinámicamente
-        if not frame.rows[index .. "_macros"] then
-          frame.rows[index .. "_macros"] = {}
-        end
-
-        local macros = SkillTrackerDB.macros[name] or {}
-        local macroBtns = frame.rows[index .. "_macros"]
-
-        -- Botón + siempre fijo
-        local addBtn = frame.rows[index .. "_addmacro"]
-        if not addBtn then
-          addBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-          addBtn:SetWidth(20)
-          addBtn:SetHeight(20)
-          addBtn:SetText("+")
+        ----------------------------------------------------------------
+        -- 1c.  Botón '+' (agregar macro) y botones de macro numerados
+        ----------------------------------------------------------------
+        if not frame.rows[index .. "_addmacro"] then
+          local addBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+          addBtn:SetWidth(20); addBtn:SetHeight(20); addBtn:SetText("+")
           frame.rows[index .. "_addmacro"] = addBtn
         end
-        local addBtnX = 180
-        addBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", addBtnX, -30 - ((index - 1) * 18))
-        addBtn:Show()
+        local addBtn   = frame.rows[index .. "_addmacro"]
+        local addBtnX  = 180
+        addBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", addBtnX, rowY)
+
+        -- Acción del botón '+'
         addBtn:SetScript("OnClick", function()
-          if not SkillTrackerDB.macros[name] then
-            SkillTrackerDB.macros[name] = {}
-          end
+          if not SkillTrackerDB.macros[name] then SkillTrackerDB.macros[name] = {} end
           tinsert(SkillTrackerDB.macros[name], {})
           local macroIndex = getn(SkillTrackerDB.macros[name])
           SkillTracker_EditMacro(name, macroIndex, true)
         end)
+        addBtn:Show()
 
-        -- Limpia botones de macro viejos
+        -- Macro-botones
+        if not frame.rows[index .. "_macros"] then
+          frame.rows[index .. "_macros"] = {}
+        end
+        local macroBtns = frame.rows[index .. "_macros"]
+        local macros    = SkillTrackerDB.macros[name] or {}
+
+        -- Oculta cualquier botón antiguo sobrante
         for m = 1, getn(macroBtns) do
           if macroBtns[m] then macroBtns[m]:Hide() end
         end
 
-        -- Los botones de macro van a la derecha del +
+        -- Crea / posiciona botones existentes
         for m = 1, getn(macros) do
           if not macroBtns[m] then
             local btn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-            btn:SetWidth(24)
-            btn:SetHeight(20)
+            btn:SetWidth(24); btn:SetHeight(20)
             btn:SetText(m)
             macroBtns[m] = btn
           end
           local btn = macroBtns[m]
-          btn:SetPoint("TOPLEFT", frame, "TOPLEFT", addBtnX + 24 + (m - 1) * 26, -30 - ((index - 1) * 18))
+          btn:SetPoint("TOPLEFT", frame, "TOPLEFT",
+                       addBtnX + 24 + (m - 1) * 26, rowY)
           btn:Show()
+
           btn:SetScript("OnClick", function()
             local macroData = macros[m]
             SkillTracker_DoCraft(name, macroData)
@@ -357,9 +398,7 @@ function UpdateSkillRows()
                   tremove(SkillTrackerDB.macros[name], m)
                   UpdateSkillRows()
                 end,
-                timeout = 0,
-                whileDead = true,
-                hideOnEscape = true,
+                timeout = 0, whileDead = true, hideOnEscape = true,
               }
               StaticPopup_Show("SKILLTRACKER_DELETE_MACRO")
             elseif arg1 == "RightButton" then
@@ -374,22 +413,22 @@ function UpdateSkillRows()
               GameTooltip:Show()
             end
           end)
-          btn:SetScript("OnLeave", function()
-            GameTooltip:Hide()
-          end)
+          btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
         end
 
-        -- Estilo de texto
-        local rowText = "|cffffff00" .. name .. "|r: |cffffffff" .. rank .. "/" .. maxRank .. "|r"
-        row:SetText(rowText)
-        row:Show()
+        ----------------------------------------------------------------
+        -- 1d.  Texto y comportamiento del icono
+        ----------------------------------------------------------------
+        local iconData = professionData[name]
+        local rowText  = "|cffffff00" .. name .. "|r: |cffffffff" ..
+                         rank .. "/" .. maxRank .. "|r"
+        row:SetText(rowText); row:Show()
 
-        -- Si hay datos de icono
         if iconData then
-          iconBtn.texture:SetTexture(iconData.icon)
-          -- PESCA: lógica especial
+          iconBtn:SetNormalTexture(iconData.icon)
+          iconBtn:SetHighlightTexture(nil)
+
           if iconData.spell == "Pesca" or iconData.spell == "Fishing" then
-            local hasPole = IsFishingPoleEquipped()
             iconBtn:SetScript("OnClick", function()
               if IsFishingPoleEquipped() then
                 CastSpellByName("Pesca(Experimentado)")
@@ -399,25 +438,20 @@ function UpdateSkillRows()
                 CastSpellByName("Pescar")
               end
             end)
-            iconBtn.texture:SetVertexColor(1, 1, 1)
-            if hasPole then
-              iconBtn.texture:SetDesaturated(false)
-              iconBtn:SetAlpha(1.0)
-              iconBtn:Enable()
+            if IsFishingPoleEquipped() then
+              iconBtn:GetNormalTexture():SetDesaturated(false)
+              iconBtn:SetAlpha(1.0); iconBtn:Enable()
             else
-              iconBtn.texture:SetDesaturated(true)
-              iconBtn:SetAlpha(0.4)
-              iconBtn:Disable()
+              iconBtn:GetNormalTexture():SetDesaturated(true)
+              iconBtn:SetAlpha(0.4);  iconBtn:Disable()
             end
           else
             iconBtn:SetScript("OnClick", function()
               CastSpellByName(iconData.spell)
             end)
-            iconBtn.texture:SetDesaturated(false)
-            iconBtn.texture:SetVertexColor(1, 1, 1)
-            iconBtn:Enable()
+            iconBtn:GetNormalTexture():SetDesaturated(false)
+            iconBtn:SetAlpha(1.0); iconBtn:Enable()
           end
-
           iconBtn:Show()
         else
           iconBtn:Hide()
@@ -426,74 +460,62 @@ function UpdateSkillRows()
         index = index + 1
       end
     end
-  end
+  end -- for GetNumSkillLines
 
-  -- Ocultar filas sobrantes
+  ----------------------------------------------------------------------
+  -- 2.  OCULTAR FILAS QUE SOBRAN
+  ----------------------------------------------------------------------
   for i = index, getn(frame.rows) do
     if frame.rows[i] then frame.rows[i]:Hide() end
     if frame.rows[i .. "_icon"] then frame.rows[i .. "_icon"]:Hide() end
     if frame.rows[i .. "_addmacro"] then frame.rows[i .. "_addmacro"]:Hide() end
     if frame.rows[i .. "_macros"] then
-      local macroBtns = frame.rows[i .. "_macros"]
-      for m = 1, getn(macroBtns) do
-        if macroBtns[m] then macroBtns[m]:Hide() end
+      for m = 1, getn(frame.rows[i .. "_macros"]) do
+        if frame.rows[i .. "_macros"][m] then frame.rows[i .. "_macros"][m]:Hide() end
       end
     end
   end
 
-  -- --- MOSTRAR SLOTS DE BOLSAS POR TIPO ---
-
-  -- Limpia labels anteriores si los hay
+  ----------------------------------------------------------------------
+  -- 3.  SECCIÓN "ESPACIOS DISPONIBLES EN BOLSAS"
+  ----------------------------------------------------------------------
+  -- A) Limpiar labels anteriores
   if frame.bagSlotLabels then
-    for _, lbl in ipairs(frame.bagSlotLabels) do
-      lbl:Hide()
-    end
+    for _, lbl in ipairs(frame.bagSlotLabels) do lbl:Hide() end
   end
   frame.bagSlotLabels = {}
-  local i = 1
 
+  ----------------------------------------------------------------------
+  -- B) Calcular espacios libres / totales por familia
+  ----------------------------------------------------------------------
   local familyNames = {
-    [0] = { name = "Bolsa normal", color = "|cffcccccc" },
-    [1] = { name = "Almas", color = "|cffb13cff" },
-    [2] = { name = "Hierbas", color = "|cff00ff00" },
-    [4] = { name = "Encantamiento", color = "|cff66ccff" },
-    [8] = { name = "Ingeniería", color = "|cffffa500" },
-    [16] = { name = "Munición", color = "|cffffff00" },
-    [32] = { name = "Minería", color = "|cffbbaa00" },
+    [0]  = { name = "Bolsa normal",      color = "|cffcccccc" },
+    [1]  = { name = "Almas",             color = "|cffb13cff" },
+    [2]  = { name = "Hierbas",           color = "|cff00ff00" },
+    [4]  = { name = "Encantamiento",     color = "|cff66ccff" },
+    [8]  = { name = "Ingeniería",        color = "|cffffa500" },
+    [16] = { name = "Munición",          color = "|cffffff00" },
+    [32] = { name = "Minería",           color = "|cffbbaa00" },
   }
 
   local slotTotals, slotLibres = {}, {}
 
   for bag = 0, 4 do
-    local fam = 0 -- Por defecto, normal
-
-    if bag == 0 then
-      fam = 0 -- Mochila base siempre normal
-    else
-      local invSlot = bag + 19
-      local link = GetInventoryItemLink("player", invSlot)
-      local itemType, itemId
+    local fam = 0
+    if bag ~= 0 then
+      local link = GetInventoryItemLink("player", bag + 19)
       if link then
-        local _, _, itemString = string.find(link, "item:(%d+):")
-        itemId = tonumber(itemString)
-        if itemId then
-          local _, _, _, _, _, itemType_ = GetItemInfo(itemId)
-          itemType = itemType_ or ""
-          local typeLower = string.lower(itemType)
-          if string.find(typeLower, "alma") then
-            fam = 1
-          elseif string.find(typeLower, "hierba") then
-            fam = 2
-          elseif string.find(typeLower, "encant") then
-            fam = 4
-          elseif string.find(typeLower, "ingenier") then
-            fam = 8
-          elseif string.find(typeLower, "munici") then
-            fam = 16
-          elseif string.find(typeLower, "miner") then
-            fam = 32
-          else
-            fam = 0
+        local id = tonumber(string.match(link, "item:(%d+):"))
+        if id then
+          local _, _, _, _, _, itemType = GetItemInfo(id)
+          itemType = itemType or ""
+          local tl = string.lower(itemType)
+          if string.find(tl, "alma")       then fam = 1
+          elseif string.find(tl, "hierba") then fam = 2
+          elseif string.find(tl, "encant") then fam = 4
+          elseif string.find(tl, "ingenier") then fam = 8
+          elseif string.find(tl, "munici") then fam = 16
+          elseif string.find(tl, "miner")  then fam = 32
           end
         end
       end
@@ -511,75 +533,88 @@ function UpdateSkillRows()
     end
   end
 
-  local yOffset = -30 - ((index - 1) * 18) - 10
+  ----------------------------------------------------------------------
+  -- C) Dibujar los labels (yOffset parte del nuevo padding)
+  ----------------------------------------------------------------------
+  local yOffset = ROW_START_Y - ((index - 1) * ROW_SPACING) - BAG_PADDING
+  local lblIdx  = 1
 
-  -- Leyenda única antes del listado de bolsas
-  local legendLbl = frame.bagSlotLabels[i]
-  if not legendLbl then
-    legendLbl = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    frame.bagSlotLabels[i] = legendLbl
+  -- Leyenda principal
+  local legend = frame.bagSlotLabels[lblIdx]
+  if not legend then
+    legend = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    frame.bagSlotLabels[lblIdx] = legend
   end
-  legendLbl:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
-  legendLbl:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
-  legendLbl:SetText("|cffffaa00--- Espacios disponibles en bolsas ---|r")
-  legendLbl:Show()
-  yOffset = yOffset - 16
-  i = i + 1
+  legend:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
+  legend:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+  legend:SetText("|cffffaa00--- Espacios disponibles en bolsas ---|r")
+  legend:Show()
 
-  -- Listado de bolsas normales primero
+  yOffset = yOffset - 16
+  lblIdx  = lblIdx + 1
+
+  -- Bolsa normal primero
   if slotTotals[0] then
-    local lbl = frame.bagSlotLabels[i]
-    if not lbl then
-      lbl = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-      frame.bagSlotLabels[i] = lbl
-    end
+    local lbl = frame.bagSlotLabels[lblIdx] or
+                frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    frame.bagSlotLabels[lblIdx] = lbl
     lbl:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
     lbl:SetFont("Fonts\\FRIZQT__.TTF", 12)
-    lbl:SetText(string.format("%s%s: |cffffff00%d|r/%d|r", familyNames[0].color, familyNames[0].name, slotLibres[0], slotTotals[0]))
+    lbl:SetText(string.format("%s%s: |cffffff00%d|r/%d|r",
+                              familyNames[0].color, familyNames[0].name,
+                              slotLibres[0], slotTotals[0]))
     lbl:Show()
     yOffset = yOffset - 16
-    i = i + 1
+    lblIdx  = lblIdx + 1
   end
 
+  -- Resto de familias
   for fam, info in pairs(familyNames) do
     if fam ~= 0 and slotTotals[fam] then
-      local lbl = frame.bagSlotLabels[i]
-      if not lbl then
-        lbl = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        frame.bagSlotLabels[i] = lbl
-      end
+      local lbl = frame.bagSlotLabels[lblIdx] or
+                  frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+      frame.bagSlotLabels[lblIdx] = lbl
       lbl:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
       lbl:SetFont("Fonts\\FRIZQT__.TTF", 12)
-      lbl:SetText(string.format("%s%s: |cffffff00%d|r/%d|r", info.color, info.name, slotLibres[fam], slotTotals[fam]))
+      lbl:SetText(string.format("%s%s: |cffffff00%d|r/%d|r",
+                                info.color, info.name,
+                                slotLibres[fam], slotTotals[fam]))
       lbl:Show()
       yOffset = yOffset - 16
-      i = i + 1
+      lblIdx  = lblIdx + 1
     end
   end
 
-  if i == 2 then
-    local lbl = frame.bagSlotLabels[i]
-    if not lbl then
-      lbl = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-      frame.bagSlotLabels[i] = lbl
-    end
+  -- Si no había ninguna bolsa equipada
+  if lblIdx == 2 then
+    local lbl = frame.bagSlotLabels[lblIdx] or
+                frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    frame.bagSlotLabels[lblIdx] = lbl
     lbl:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
     lbl:SetText("|cffff8888No se detectaron bolsas equipadas.|r")
     lbl:Show()
     yOffset = yOffset - 16
-    i = i + 1
+    lblIdx  = lblIdx + 1
   end
 
-  -- Línea divisoria visual
-  local dividerLbl = frame.bagSlotLabels[i]
-  if not dividerLbl then
-    dividerLbl = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    frame.bagSlotLabels[i] = dividerLbl
-  end
-  dividerLbl:SetFont("Fonts\\FRIZQT__.TTF", 10)
-  dividerLbl:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
-  dividerLbl:SetText("|cff555555----------------------------------------|r")
-  dividerLbl:Show()
+  -- Línea divisoria inferior
+  local divider = frame.bagSlotLabels[lblIdx] or
+                  frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  frame.bagSlotLabels[lblIdx] = divider
+  divider:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
+  divider:SetFont("Fonts\\FRIZQT__.TTF", 10)
+  divider:SetText("|cff555555----------------------------------------|r")
+  divider:Show()
+
+   ----------------------------------------------------------------------
+  -- 4.  AJUSTAR ALTO DEL FRAME (crece o disminuye según el contenido)
+  ----------------------------------------------------------------------
+  local neededHeight = -yOffset + 40   -- 40 px de margen inferior
+  local MIN_HEIGHT   = 240             -- alto mínimo por estética
+
+  -- Fija la altura al mayor entre lo necesario y el mínimo.
+  -- Esto permite que el marco se agrande y también se encoja.
+  frame:SetHeight(math.max(neededHeight, MIN_HEIGHT))
 end
 
 -- Botón minimapa
