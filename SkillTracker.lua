@@ -499,6 +499,9 @@ function UpdateSkillRows()
   }
 
   local slotTotals, slotLibres = {}, {}
+  -- Contador de fragmentos y clase
+  local _, englishClass = UnitClass("player")       -- "WARLOCK" si es brujo
+  local soulShardCount  = 0                         -- total de fragmentos
 
   for bag = 0, 4 do
     local fam = 0
@@ -526,10 +529,23 @@ function UpdateSkillRows()
       slotTotals[fam] = (slotTotals[fam] or 0) + numSlots
       slotLibres[fam] = slotLibres[fam] or 0
       for slot = 1, numSlots do
-        if not GetContainerItemLink(bag, slot) then
-          slotLibres[fam] = slotLibres[fam] + 1
-        end
-      end
+		local link = GetContainerItemLink(bag, slot)
+		if link then
+		  local itemString = string.match(link, "item:(%d+):")
+	      local itemId     = tonumber(itemString)
+
+			-- 6265 = Fragmento de alma en Vanilla
+		  if itemId == 6265 then
+		    local _, itemCount = GetContainerItemInfo(bag, slot)
+			soulShardCount = soulShardCount + (itemCount or 1)
+		  end
+		else
+		  ------------------------------------------------------------------
+		  --  Hueco vacío → cuenta como espacio libre de esta familia
+		  ------------------------------------------------------------------
+		  slotLibres[fam] = slotLibres[fam] + 1
+	    end
+	  end
     end
   end
 
@@ -583,6 +599,18 @@ function UpdateSkillRows()
       yOffset = yOffset - 16
       lblIdx  = lblIdx + 1
     end
+  end
+  
+  -- Si es brujo, muestra cuántos fragmentos lleva, aunque no haya soul bag
+  if englishClass == "WARLOCK" and not slotTotals[1] then
+    local lbl = frame.bagSlotLabels[lblIdx] or frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    frame.bagSlotLabels[lblIdx] = lbl
+    lbl:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
+    lbl:SetFont("Fonts\\FRIZQT__.TTF", 12)
+    lbl:SetText(string.format("|cffb13cffFragmentos de alma:|r |cffffff00%d|r", soulShardCount))
+    lbl:Show()
+    yOffset = yOffset - 16
+    lblIdx  = lblIdx + 1
   end
 
   -- Si no había ninguna bolsa equipada
