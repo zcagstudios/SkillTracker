@@ -43,7 +43,7 @@ end
 ------------------------------------------------------------------------
 local frame = CreateFrame("Frame", "SkillTrackerFrame", UIParent)
 frame:SetWidth(260)
-frame:SetHeight(240)
+frame:SetHeight(200)
 frame:SetMovable(true)
 frame:SetResizable(true)
 frame:EnableMouse(true)
@@ -505,7 +505,7 @@ function UpdateSkillRows()
   -- B) Calcular espacios libres / totales por familia
   ----------------------------------------------------------------------
   local familyNames = {
-    [0]  = { name = "Bolsa normal",      color = "|cffcccccc" },
+    [0]  = { name = "Normal",      color = "|cffcccccc" },
     [1]  = { name = "Almas",             color = "|cffb13cff" },
     [2]  = { name = "Hierbas",           color = "|cff00ff00" },
     [4]  = { name = "Encantamiento",     color = "|cff66ccff" },
@@ -581,7 +581,7 @@ function UpdateSkillRows()
   end
   legend:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
   legend:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
-  legend:SetText("|cffffaa00--- Espacios disponibles en bolsas ---|r")
+  legend:SetText("|cffffaa00Bolsas|r")
   legend:Show()
 
   yOffset = yOffset - 16
@@ -628,7 +628,7 @@ function UpdateSkillRows()
     lbl:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
     local fontSize = SkillTrackerDB.onlyBags and 14 or 12
 	lbl:SetFont("Fonts\\FRIZQT__.TTF", fontSize, SkillTrackerDB.onlyBags and "OUTLINE" or nil)
-    lbl:SetText(string.format("|cffb13cffFragmentos de alma:|r |cffffff00%d|r", soulShardCount))
+    lbl:SetText(string.format("|cffb13cffAlmas:  |r |cffffff00%d|r", soulShardCount))
     lbl:Show()
     yOffset = yOffset - 16
     lblIdx  = lblIdx + 1
@@ -646,29 +646,22 @@ function UpdateSkillRows()
     lblIdx  = lblIdx + 1
   end
 
-  -- Línea divisoria inferior
-  local divider = frame.bagSlotLabels[lblIdx] or
-                  frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  frame.bagSlotLabels[lblIdx] = divider
-  divider:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, yOffset)
-  divider:SetFont("Fonts\\FRIZQT__.TTF", 10)
-  divider:SetText("|cff555555----------------------------------------|r")
-  divider:Show()
-
     ----------------------------------------------------------------------
   -- 4.  AJUSTAR ALTO DEL FRAME (crece o disminuye según el contenido)
   ----------------------------------------------------------------------
-  local neededHeight = -yOffset + 40          -- margen inferior
+  local neededHeight = -yOffset + 20          -- margen inferior
   local MIN_FULL     = 200                    -- vista completa
-  local MIN_BAGS     = 100                    -- solo bolsas (ajusta a gusto)
+  local MIN_BAGS     = 60                    -- solo bolsas (ajusta a gusto)
 
   if SkillTrackerDB.onlyBags then
     -- En modo bolsas dejamos que sea tan pequeño como necesite,
     -- pero nunca menos de MIN_BAGS para que se vea bien.
     frame:SetHeight(math.max(neededHeight, MIN_BAGS))
+    frame:SetWidth(130)
   else
     -- En modo normal usamos el mínimo clásico.
     frame:SetHeight(math.max(neededHeight, MIN_FULL))
+    frame:SetWidth(210)
   end
 end
 
